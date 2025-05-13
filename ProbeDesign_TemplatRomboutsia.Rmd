@@ -1,9 +1,44 @@
 ---
 title: "ProbeDesign Template for Romboutsia"
-output: html_notebook
 ---
 
 This Markdown file is copied from the original ProbeDesign_Template and uses an R environment created from R package renv for reproducibility
+
+Gettting list of filtered FASTQs from appy project
+```{r}
+library(phyloseq)
+library(Biostrings)
+
+
+ps <- readRDS('/Users/jjawahar/Library/CloudStorage/Box-Box/Git repos/16s_appy_pilot/dada2_updated_v2/2025-2-24_16s-appy_125nt_phyloseq_dna-conc_decontam.rds')
+ps
+
+
+#Only including taxa that have at least 1 read in at least 12.5% (i.e. 2) or more samples
+min_count = 1
+min_sample_frac = .1
+prune.vec = filter_taxa(ps, 
+                       function(x) sum(x >= min_count) >= (min_sample_frac*length(x)))
+head(prune.vec)
+# Get the names of ASVs that meet the pruning conditions (Should be only )
+#pruned_asvs <- names(prune.vec[prune.vec == TRUE])
+#pruned_asvs
+ps_probe_prune <- prune_taxa(prune.vec, ps)
+ps_probe_prune
+```
+
+Saving list to FASTQ (See: https://github.com/joey711/phyloseq/issues/1466)
+```{r}
+physeq %>%
+      refseq() %>%
+      Biostrings::writeXStringSet("~/asv.fna", append=FALSE,
+                                  compress=FALSE, compression_level=NA, format="fasta")
+```
+
+
+
+
+
 
 # Defining project parameters
 ```{r}
@@ -26,7 +61,7 @@ maxFAm <- 46
 GCmin <- 30
 GCmax <- 90
 minScore <- -112
-number_of_cores <- 4
+number_of_cores <- 6 #Changed from 4 to 6
 
 
 # OTHER PARAMETERS 
@@ -50,6 +85,8 @@ library(tidyverse)
 library(stringr)
 library(TmCalculator)
 library(rmarkdown)
+library(DBI) #Required for dbConnect() step later, was not in markdown
+library(RSQLite) #Required for SQLite within dbConnect() command
 
 # Get the GC% for a probe
 get_GC <- function(x) {
